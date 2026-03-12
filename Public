@@ -1,1 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente IA v2 · NubeConnect</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,400&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --bg: #080c10;
+  --panel: #0d1520;
+  --panel2: #111d2e;
+  --panel3: #162032;
+  --border: #1a2d42;
+  --border2: #1e3550;
+  --accent: #00b4d8;
+  --accent2: #0077b6;
+  --green: #06d6a0;
+  --yellow: #ffd166;
+  --red: #ef476f;
+  --purple: #9b72cf;
+  --text: #c8d8e8;
+  --text-dim: #5a7a96;
+  --text-bright: #e8f4ff;
+  --mono: 'Source Code Pro', monospace;
+  --display: 'Rajdhani', sans-serif;
+  --body: 'Source Sans 3', sans-serif;
+}
+
+body { background: var(--bg); color: var(--text); font-family: var(--body); min-height: 100vh; overflow-x: hidden; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 20% 0%, rgba(0,180,216,0.04) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 100%, rgba(155,114,207,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+.hdr {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,12,16,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-box {
+  width: 30px; height: 30px;
+  border: 1.5px solid var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-size: 12px; font-weight: 700; color: var(--accent);
+  box-shadow: 0 0 10px rgba(0,180,216,0.2);
+}
+.logo-name { font-family: var(--display); font-size: 16px; font-weight: 600; color: var(--text-bright); letter-spacing: 0.06em; }
+.logo-ver { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-left: 4px; }
+
+.hdr-right { display: flex; align-items: center; gap: 16px; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.hdr-clock { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.hdr-empresa { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+
+/* ── LAYOUT ── */
+.layout { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 56px); position: relative; z-index: 1; }
+
+/* ── SIDEBAR ── */
+.sidebar { border-right: 1px solid var(--border); background: var(--panel); padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+
+.s-block { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+.s-hdr {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  font-family: var(--display); font-size: 11px; font-weight: 600;
+  color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+}
+.s-hdr::before { content: ''; width: 2px; height: 10px; background: var(--accent); border-radius: 1px; box-shadow: 0 0 6px var(--accent); }
+
+.s-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+.f-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+
+.f-input, .f-select, .f-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-family: var(--mono); font-size: 11px; color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.f-input:focus, .f-select:focus, .f-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0,180,216,0.1);
+}
+.f-select { cursor: pointer; }
+.f-textarea { resize: vertical; min-height: 80px; font-size: 12px; font-family: var(--body); line-height: 1.5; }
+
+/* CHECKBOXES */
+.checks { display: flex; flex-direction: column; gap: 6px; }
+.check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.check-row input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+.check-row label { font-size: 12px; color: var(--text); cursor: pointer; }
+
+/* BTN */
+.btn-run {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000;
+  border: none; border-radius: 6px;
+  padding: 12px;
+  font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.btn-run:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,180,216,0.4); }
+.btn-run:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-run.running::after {
+  content: '';
+  position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: sweep 1.2s infinite;
+}
+@keyframes sweep { to { left: 100% } }
+
+.err { display: none; background: rgba(239,71,111,0.08); border: 1px solid rgba(239,71,111,0.25); border-radius: 5px; padding: 10px 12px; font-family: var(--mono); font-size: 11px; color: var(--red); line-height: 1.5; }
+
+/* KPIs */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.kpi { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
+.kpi-val { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--text-bright); line-height: 1; }
+.kpi-val.warn { color: var(--yellow); }
+.kpi-val.bad { color: var(--red); }
+.kpi-val.ok { color: var(--green); }
+.kpi-lbl { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+
+/* INV BARS */
+.inv-row { margin-bottom: 8px; }
+.inv-top { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.inv-name { font-size: 11px; }
+.inv-val { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.inv-bar { height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+.inv-fill { height: 100%; border-radius: 2px; transition: width 1.2s ease; }
+.inv-fill.ok { background: var(--green); }
+.inv-fill.warn { background: var(--yellow); }
+.inv-fill.bad { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* ── MAIN ── */
+.main { display: flex; flex-direction: column; padding: 24px 28px; gap: 20px; overflow-y: auto; }
+
+/* TURNOS */
+.turnos-panel { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.panel-hdr {
+  background: var(--panel2); border-bottom: 1px solid var(--border);
+  padding: 10px 18px; display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title { font-family: var(--display); font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+.panel-badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; background: rgba(0,180,216,0.1); color: var(--accent); border: 1px solid rgba(0,180,216,0.2); }
+
+.turnos-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; }
+.turno {
+  padding: 16px; border-right: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.turno:last-child { border-right: none; }
+.turno::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; }
+.turno.mat::before { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.turno.ves::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.turno.noc::before { background: var(--yellow); }
+
+.t-name { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 8px; }
+.t-big { font-family: var(--display); font-size: 32px; font-weight: 700; color: var(--text-bright); line-height: 1; }
+.t-big.bad { color: var(--red); }
+.t-prog { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 2px; margin-bottom: 8px; }
+.t-row { display: flex; justify-content: space-between; font-size: 12px; margin-top: 3px; }
+.t-row-lbl { color: var(--text-dim); }
+.t-row-val { font-family: var(--mono); font-weight: 600; }
+.t-row-val.red { color: var(--red); }
+.t-row-val.ylw { color: var(--yellow); }
+.t-causa { font-size: 10px; color: var(--text-dim); margin-top: 6px; line-height: 1.3; font-style: italic; }
+.t-causa.alert { color: var(--red); font-style: normal; }
+
+/* ── AGENTE PANEL ── */
+.agent-panel { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; flex: 1; }
+
+.agent-hdr { background: var(--panel2); border-bottom: 1px solid var(--border); padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; }
+
+.agent-status { display: flex; align-items: center; gap: 8px; }
+.agent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); transition: all 0.3s; }
+.agent-dot.thinking { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); animation: pulse 0.8s infinite; }
+.agent-dot.done { background: var(--green); box-shadow: 0 0 10px var(--green); }
+.agent-status-text { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+.agent-body { padding: 0; }
+
+/* THINKING LOG */
+.thinking-log { display: none; border-bottom: 1px solid var(--border); background: #050810; padding: 16px 20px; max-height: 280px; overflow-y: auto; }
+.thinking-log.visible { display: block; }
+
+.log-title { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+
+.log-entry { margin-bottom: 10px; animation: fadeSlide 0.3s ease both; }
+@keyframes fadeSlide { from { opacity:0; transform: translateX(-8px) } to { opacity:1; transform: translateX(0) } }
+
+.log-tool {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 11px;
+  padding: 3px 8px; border-radius: 3px;
+  margin-bottom: 4px;
+}
+.log-tool.call { background: rgba(0,180,216,0.1); color: var(--accent); border: 1px solid rgba(0,180,216,0.2); }
+.log-tool.result { background: rgba(6,214,160,0.08); color: var(--green); border: 1px solid rgba(6,214,160,0.15); }
+.log-tool.order { background: rgba(255,209,102,0.1); color: var(--yellow); border: 1px solid rgba(255,209,102,0.2); }
+
+.log-detail { font-family: var(--mono); font-size: 10px; color: var(--text-dim); padding-left: 14px; line-height: 1.5; }
+
+/* ORDENES */
+.ordenes-section { display: none; border-bottom: 1px solid var(--border); padding: 16px 20px; background: rgba(255,209,102,0.03); }
+.ordenes-section.visible { display: block; }
+.ordenes-title { font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--yellow); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+.orden-card {
+  background: var(--panel); border: 1px solid rgba(255,209,102,0.2); border-radius: 6px;
+  padding: 12px 14px; margin-bottom: 8px;
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;
+}
+.orden-folio { font-family: var(--mono); font-size: 11px; color: var(--yellow); margin-bottom: 3px; }
+.orden-mat { font-size: 14px; font-weight: 600; color: var(--text-bright); }
+.orden-detail { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.orden-total { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--yellow); text-align: right; }
+.orden-prov { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-align: right; }
+.orden-badge { display: inline-block; margin-top: 4px; font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 3px; background: rgba(6,214,160,0.1); color: var(--green); border: 1px solid rgba(6,214,160,0.2); }
+
+/* REPORTE */
+.reporte-section { padding: 24px 28px; }
+
+.empty-st { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; gap: 10px; }
+.empty-icon { font-size: 42px; opacity: 0.25; }
+.empty-t { font-family: var(--display); font-size: 16px; color: var(--text-dim); letter-spacing: 0.05em; }
+.empty-s { font-size: 13px; color: var(--text-dim); max-width: 300px; line-height: 1.5; }
+
+.loading-st { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 60px 20px; }
+.spin { width: 36px; height: 36px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg) } }
+.loading-msg { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; }
+
+.md-content { display: none; }
+
+/* MARKDOWN */
+.md h2 { font-family: var(--display); font-size: 17px; font-weight: 700; color: var(--text-bright); letter-spacing: 0.04em; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.md h2:first-child { margin-top: 0; }
+.md p { font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 10px; }
+.md ul, .md ol { padding-left: 18px; margin-bottom: 12px; }
+.md li { font-size: 14px; line-height: 1.7; margin-bottom: 3px; }
+.md strong { color: var(--text-bright); font-weight: 600; }
+.md code { font-family: var(--mono); font-size: 12px; background: var(--panel2); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+
+/* FOOTER */
+.agent-footer { display: none; border-top: 1px solid var(--border); background: var(--panel2); padding: 8px 18px; gap: 16px; }
+.agent-footer.visible { display: flex; }
+.f-item { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.f-item span { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .turnos-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-box">NC</div>
+    <div>
+      <span class="logo-name">NUBECONNECT</span>
+      <span class="logo-ver">AGENTE v2.0</span>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="live-dot"></div>
+    <span class="hdr-empresa" id="hdrEmpresa">Manufacturas del Norte SA</span>
+    <span class="hdr-clock" id="clock">--:--:--</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <!-- Credenciales -->
+    <div class="s-block">
+      <div class="s-hdr">Credenciales</div>
+      <div class="s-body">
+        <div>
+          <div class="f-label">OpenAI API Key</div>
+          <input type="password" class="f-input" id="apiKey" placeholder="sk-...">
+        </div>
+        <div>
+          <div class="f-label">Empresa</div>
+          <input type="text" class="f-input" id="empresa" value="Manufacturas del Norte SA">
+        </div>
+      </div>
+    </div>
+
+    <!-- Correo -->
+    <div class="s-block">
+      <div class="s-hdr">Envío de Correo (opcional)</div>
+      <div class="s-body">
+        <div>
+          <div class="f-label">Tu correo (remitente)</div>
+          <input type="email" class="f-input" id="emailUser" placeholder="tu@correo.com">
+        </div>
+        <div>
+          <div class="f-label">Contraseña / App Password</div>
+          <input type="password" class="f-input" id="emailPass" placeholder="contraseña">
+        </div>
+        <div>
+          <div class="f-label">Servidor SMTP</div>
+          <input type="text" class="f-input" id="emailHost" placeholder="smtp.gmail.com">
+        </div>
+        <div>
+          <div class="f-label">Puerto</div>
+          <input type="text" class="f-input" id="emailPort" placeholder="587" value="587">
+        </div>
+        <div>
+          <div class="f-label">Enviar reporte a</div>
+          <input type="email" class="f-input" id="emailDest" placeholder="gerente@empresa.mx">
+        </div>
+      </div>
+    </div>
+
+    <!-- Personalización -->
+    <div class="s-block">
+      <div class="s-hdr">Personalizar Reporte</div>
+      <div class="s-body">
+        <div>
+          <div class="f-label">Tipo de análisis</div>
+          <select class="f-select" id="tipoAnalisis">
+            <option value="completo">Análisis completo</option>
+            <option value="produccion">Solo producción</option>
+            <option value="inventario">Solo inventarios</option>
+            <option value="ejecutivo">Resumen ejecutivo (breve)</option>
+          </select>
+        </div>
+        <div>
+          <div class="f-label">Dirigido a</div>
+          <select class="f-select" id="dirigidoA">
+            <option value="gerente_planta">Gerente de Planta</option>
+            <option value="director">Director General</option>
+            <option value="compras">Gerente de Compras</option>
+            <option value="it">Equipo IT</option>
+          </select>
+        </div>
+        <div>
+          <div class="f-label">Acciones del agente</div>
+          <div class="checks">
+            <label class="check-row"><input type="checkbox" id="chkComparar" checked><label for="chkComparar">Comparar vs semana anterior</label></label>
+            <label class="check-row"><input type="checkbox" id="chkOrdenes" checked><label for="chkOrdenes">Generar órdenes de compra</label></label>
+            <label class="check-row"><input type="checkbox" id="chkCorreo"><label for="chkCorreo">Enviar por correo al terminar</label></label>
+          </div>
+        </div>
+        <div>
+          <div class="f-label">Instrucciones adicionales</div>
+          <textarea class="f-textarea" id="instrExtra" placeholder="Ej: Enfócate en el turno nocturno. Incluye recomendación para el compresor..."></textarea>
+        </div>
+        <button class="btn-run" id="btnRun" onclick="ejecutarAgente()">▶ EJECUTAR AGENTE</button>
+        <div class="err" id="errBox"></div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="s-block">
+      <div class="s-hdr">Semana Actual</div>
+      <div class="s-body">
+        <div class="kpi-grid">
+          <div class="kpi"><div class="kpi-val warn">2,993</div><div class="kpi-lbl">Piezas prod.</div></div>
+          <div class="kpi"><div class="kpi-val bad">85.4%</div><div class="kpi-lbl">Cumplimiento</div></div>
+          <div class="kpi"><div class="kpi-val bad">154</div><div class="kpi-lbl">Rechazos</div></div>
+          <div class="kpi"><div class="kpi-val bad">255 min</div><div class="kpi-lbl">Paros</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventario -->
+    <div class="s-block">
+      <div class="s-hdr">Inventario MP</div>
+      <div class="s-body">
+        <div class="inv-row">
+          <div class="inv-top"><span class="inv-name">Resina ABS</span><span class="inv-val">2,340 kg</span></div>
+          <div class="inv-bar"><div class="inv-fill ok" style="width:57%"></div></div>
+        </div>
+        <div class="inv-row">
+          <div class="inv-top"><span class="inv-name">Pigmento Negro</span><span class="inv-val" style="color:var(--red)">180 kg ⚠</span></div>
+          <div class="inv-bar"><div class="inv-fill bad" style="width:43%"></div></div>
+        </div>
+        <div class="inv-row">
+          <div class="inv-top"><span class="inv-name">Aditivo Estabilizador</span><span class="inv-val" style="color:var(--red)">95 kg ⚠</span></div>
+          <div class="inv-bar"><div class="inv-fill bad" style="width:32%"></div></div>
+        </div>
+        <div class="inv-row">
+          <div class="inv-top"><span class="inv-name">Cajas Empaque</span><span class="inv-val">3,200 pzas</span></div>
+          <div class="inv-bar"><div class="inv-fill ok" style="width:80%"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- Turnos -->
+    <div class="turnos-panel">
+      <div class="panel-hdr">
+        <div class="panel-title">🗄️ Datos desde Proscai ERP</div>
+        <div class="panel-badge">SEMANA 3–9 MAR 2025</div>
+      </div>
+      <div class="turnos-grid">
+        <div class="turno mat">
+          <div class="t-name">☀️ MATUTINO</div>
+          <div class="t-big">1,143</div>
+          <div class="t-prog">de 1,200 programadas</div>
+          <div class="t-row"><span class="t-row-lbl">Rechazos</span><span class="t-row-val red">87 pzas</span></div>
+          <div class="t-row"><span class="t-row-lbl">Paro</span><span class="t-row-val ylw">95 min</span></div>
+          <div class="t-causa">Falla compresor L3 + cambio molde</div>
+        </div>
+        <div class="turno ves">
+          <div class="t-name">🌅 VESPERTINO</div>
+          <div class="t-big">1,089</div>
+          <div class="t-prog">de 1,100 programadas</div>
+          <div class="t-row"><span class="t-row-lbl">Rechazos</span><span class="t-row-val">23 pzas</span></div>
+          <div class="t-row"><span class="t-row-lbl">Paro</span><span class="t-row-val">18 min</span></div>
+          <div class="t-causa">Ajuste de calibración</div>
+        </div>
+        <div class="turno noc">
+          <div class="t-name">🌙 NOCTURNO</div>
+          <div class="t-big bad">761</div>
+          <div class="t-prog">de 900 programadas</div>
+          <div class="t-row"><span class="t-row-lbl">Rechazos</span><span class="t-row-val red">44 pzas</span></div>
+          <div class="t-row"><span class="t-row-lbl">Paro</span><span class="t-row-val red">142 min</span></div>
+          <div class="t-causa alert">⚠️ Corte de energía no programado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agente -->
+    <div class="agent-panel">
+      <div class="agent-hdr">
+        <div class="agent-status">
+          <div class="agent-dot" id="agentDot"></div>
+          <span class="agent-status-text" id="agentStatusText">EN ESPERA</span>
+        </div>
+        <div style="display:flex;gap:12px">
+          <span class="f-item" id="metaIter">iteraciones: —</span>
+          <span class="f-item" id="metaTokens">tokens: —</span>
+        </div>
+      </div>
+
+      <div class="agent-body">
+
+        <!-- Log de pensamiento -->
+        <div class="thinking-log" id="thinkingLog">
+          <div class="log-title">▸ RAZONAMIENTO DEL AGENTE EN TIEMPO REAL</div>
+          <div id="logEntries"></div>
+        </div>
+
+        <!-- Órdenes generadas -->
+        <div class="ordenes-section" id="ordenesSection">
+          <div class="ordenes-title">📋 Órdenes de Compra Generadas</div>
+          <div id="ordenesContainer"></div>
+        </div>
+
+        <!-- Reporte final -->
+        <div class="reporte-section">
+          <div class="empty-st" id="emptySt">
+            <div class="empty-icon">🤖</div>
+            <div class="empty-t">AGENTE EN ESPERA</div>
+            <div class="empty-s">Personaliza las opciones y presiona "Ejecutar Agente" para ver cómo el agente razona, usa herramientas y genera el reporte.</div>
+          </div>
+          <div class="loading-st" id="loadingSt">
+            <div class="spin"></div>
+            <div class="loading-msg" id="loadingMsg">INICIALIZANDO AGENTE...</div>
+          </div>
+          <div class="md-content" id="mdContent">
+            <div class="md" id="mdBody"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="agent-footer" id="agentFooter">
+        <div class="f-item">modelo: <span>gpt-4o-mini</span></div>
+        <div class="f-item">iteraciones: <span id="footerIter">—</span></div>
+        <div class="f-item">tokens: <span id="footerTokens">—</span></div>
+        <div class="f-item">órdenes generadas: <span id="footerOrdenes">—</span></div>
+        <div class="f-item">correo: <span id="footerCorreo">—</span></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// Clock
+setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-MX'); }, 1000);
+
+const TOOL_NAMES = {
+  obtener_datos_produccion: '📊 Consultando datos de producción en Proscai...',
+  obtener_inventario:       '📦 Leyendo inventario de materias primas...',
+  generar_orden_compra:     '📋 Generando orden de compra...',
+  comparar_semanas:         '📈 Comparando vs semana anterior...',
+  enviar_reporte_correo:    '✉️ Enviando reporte por correo...'
+};
+
+function addLog(tipo, texto, detalle) {
+  const log = document.getElementById('thinkingLog');
+  const entries = document.getElementById('logEntries');
+  log.classList.add('visible');
+
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `
+    <div class="log-tool ${tipo}">${texto}</div>
+    ${detalle ? `<div class="log-detail">${detalle}</div>` : ''}
+  `;
+  entries.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function setStatus(state, text) {
+  const dot = document.getElementById('agentDot');
+  const txt = document.getElementById('agentStatusText');
+  dot.className = 'agent-dot ' + state;
+  txt.textContent = text;
+}
+
+function construirInstrucciones() {
+  const tipo = document.getElementById('tipoAnalisis').value;
+  const dirigido = document.getElementById('dirigidoA').value;
+  const comparar = document.getElementById('chkComparar').checked;
+  const ordenes = document.getElementById('chkOrdenes').checked;
+  const correo = document.getElementById('chkCorreo').checked;
+  const emailDest = document.getElementById('emailDest').value;
+  const extra = document.getElementById('instrExtra').value;
+
+  const tipoMap = { completo: 'análisis completo de producción e inventarios', produccion: 'análisis enfocado solo en producción', inventario: 'análisis enfocado solo en inventarios', ejecutivo: 'resumen ejecutivo breve (máximo 5 puntos)' };
+  const dirMap = { gerente_planta: 'Gerente de Planta (lenguaje técnico-operativo)', director: 'Director General (lenguaje ejecutivo, enfoque en impacto económico)', compras: 'Gerente de Compras (enfoque en proveedores y costos)', it: 'Equipo IT (lenguaje técnico, menciona APIs y sistemas)' };
+
+  let inst = `Genera un ${tipoMap[tipo]} dirigido al ${dirMap[dirigido]}.`;
+  if (comparar) inst += ` Incluye comparativo detallado vs semana anterior con variaciones porcentuales.`;
+  if (ordenes) inst += ` Revisa inventarios y genera órdenes de compra para TODOS los materiales bajo mínimo, calculando cantidad para 4 semanas de producción.`;
+  if (correo && emailDest) inst += ` Al finalizar, envía el reporte completo por correo a ${emailDest} con asunto "Reporte Semanal de Producción — Semana 3-9 Mar 2025".`;
+  if (extra) inst += ` Instrucciones adicionales: ${extra}`;
+  return inst;
+}
+
+async function ejecutarAgente() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const empresa = document.getElementById('empresa').value.trim();
+  const errBox = document.getElementById('errBox');
+  const btn = document.getElementById('btnRun');
+
+  if (!apiKey) { mostrarError('Ingresa tu API key de OpenAI'); return; }
+
+  errBox.style.display = 'none';
+  btn.disabled = true;
+  btn.classList.add('running');
+  btn.textContent = '⏳ AGENTE CORRIENDO...';
+  document.getElementById('hdrEmpresa').textContent = empresa;
+
+  // Reset UI
+  document.getElementById('emptySt').style.display = 'none';
+  document.getElementById('mdContent').style.display = 'none';
+  document.getElementById('agentFooter').classList.remove('visible');
+  document.getElementById('ordenesSection').classList.remove('visible');
+  document.getElementById('ordenesContainer').innerHTML = '';
+  document.getElementById('logEntries').innerHTML = '';
+  document.getElementById('thinkingLog').classList.remove('visible');
+
+  document.getElementById('loadingSt').style.display = 'flex';
+  document.getElementById('loadingMsg').textContent = 'CONECTANDO CON PROSCAI ERP...';
+  setStatus('thinking', 'ANALIZANDO...');
+
+  const config = {
+    empresa,
+    emailUser: document.getElementById('emailUser').value,
+    emailPass: document.getElementById('emailPass').value,
+    emailHost: document.getElementById('emailHost').value || 'smtp.gmail.com',
+    emailPort: document.getElementById('emailPort').value || '587'
+  };
+
+  try {
+    const res = await fetch('/api/agente', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey, config, instrucciones: construirInstrucciones() })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error);
+
+    // Mostrar pasos del agente
+    document.getElementById('loadingSt').style.display = 'none';
+    document.getElementById('logEntries').innerHTML = '';
+
+    for (const paso of data.pasos) {
+      const label = TOOL_NAMES[paso.herramienta] || paso.herramienta;
+      let detalle = '';
+
+      if (paso.herramienta === 'obtener_datos_produccion') {
+        detalle = `Semana: ${paso.args.semana} → ${Array.isArray(paso.resultado.datos) ? paso.resultado.datos.length + ' turnos recuperados' : 'datos comparativos obtenidos'}`;
+      } else if (paso.herramienta === 'obtener_inventario') {
+        const alertas = paso.resultado.alertas || [];
+        detalle = `${paso.resultado.inventario?.length || 0} materiales revisados${alertas.length ? ` → ⚠️ ALERTA: ${alertas.join(', ')}` : ' → todos OK'}`;
+      } else if (paso.herramienta === 'generar_orden_compra') {
+        detalle = `${paso.resultado.material} — ${paso.resultado.cantidad} ${paso.resultado.unidad || ''} — Folio: ${paso.resultado.folio} — Total: $${paso.resultado.total_mxn} MXN`;
+      } else if (paso.herramienta === 'comparar_semanas') {
+        const c = paso.resultado;
+        detalle = `Producción: ${c.produccion?.variacion_pct}% | Rechazos: ${c.rechazos?.variacion_pct}% | Paros: ${c.paros?.variacion_pct}%`;
+      } else if (paso.herramienta === 'enviar_reporte_correo') {
+        detalle = paso.resultado.enviado ? `✓ Enviado a ${paso.resultado.destinatario}` : `⚠️ ${paso.resultado.error}`;
+      }
+
+      addLog(paso.herramienta === 'generar_orden_compra' ? 'order' : 'result', label, detalle);
+    }
+
+    // Órdenes de compra
+    if (data.ordenes && data.ordenes.length > 0) {
+      const sec = document.getElementById('ordenesSection');
+      const cont = document.getElementById('ordenesContainer');
+      sec.classList.add('visible');
+      data.ordenes.forEach(o => {
+        cont.innerHTML += `
+          <div class="orden-card">
+            <div>
+              <div class="orden-folio">${o.folio}</div>
+              <div class="orden-mat">${o.material}</div>
+              <div class="orden-detail">${o.cantidad} ${o.unidad} · Proveedor: ${o.proveedor} · Entrega: ${o.tiempo_entrega}</div>
+              <div class="orden-detail" style="margin-top:4px;font-style:italic;color:var(--text-dim)">${o.justificacion}</div>
+              <span class="orden-badge">✓ GENERADA</span>
+            </div>
+            <div>
+              <div class="orden-total">$${Number(o.total_mxn).toLocaleString('es-MX')} MXN</div>
+              <div class="orden-prov">@$${o.precio_unitario}/${o.unidad}</div>
+            </div>
+          </div>`;
+      });
+    }
+
+    // Reporte final
+    document.getElementById('mdContent').style.display = 'block';
+    document.getElementById('mdBody').innerHTML = marked.parse(data.reporte || '');
+
+    // Footer
+    const correoEnviado = data.pasos.find(p => p.herramienta === 'enviar_reporte_correo');
+    document.getElementById('agentFooter').classList.add('visible');
+    document.getElementById('footerIter').textContent = data.iteraciones;
+    document.getElementById('footerTokens').textContent = data.tokens;
+    document.getElementById('footerOrdenes').textContent = data.ordenes?.length || 0;
+    document.getElementById('footerCorreo').textContent = correoEnviado?.resultado?.enviado ? `Enviado a ${correoEnviado.resultado.destinatario}` : 'No enviado';
+    document.getElementById('metaIter').textContent = `iteraciones: ${data.iteraciones}`;
+    document.getElementById('metaTokens').textContent = `tokens: ${data.tokens}`;
+
+    setStatus('done', 'ANÁLISIS COMPLETO');
+
+  } catch (err) {
+    document.getElementById('loadingSt').style.display = 'none';
+    document.getElementById('emptySt').style.display = 'flex';
+    mostrarError(err.message);
+    setStatus('', 'ERROR');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('running');
+    btn.textContent = '▶ EJECUTAR AGENTE';
+  }
+}
+
+function mostrarError(msg) {
+  const box = document.getElementById('errBox');
+  box.style.display = 'block';
+  box.textContent = '⚠️ ' + msg;
+}
+</script>
+</body>
+</html>
