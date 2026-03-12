@@ -5,7 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agente IA v2 · NubeConnect</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,400&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js">
+async function exportarExcel() {
+  const btn = document.getElementById('btnExcel');
+  if (!window._lastResult) return;
+  btn.disabled = true; btn.textContent = '⏳ Generando...';
+  try {
+    const res = await fetch('/api/exportar-excel', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ reporte: window._lastResult.reporte, ordenes: window._lastResult.ordenes, empresa: window._lastEmpresa })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'Reporte_Produccion_NubeConnect.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  } catch(err) { mostrarError('Excel: ' + err.message); }
+  finally { btn.disabled = false; btn.textContent = '⬇ Excel'; }
+}
+
+async function exportarPDF() {
+  const btn = document.getElementById('btnPdf');
+  if (!window._lastResult) return;
+  btn.disabled = true; btn.textContent = '⏳ Preparando...';
+  try {
+    const res = await fetch('/api/exportar-pdf', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ reporte: window._lastResult.reporte, ordenes: window._lastResult.ordenes, empresa: window._lastEmpresa })
+    });
+    const data = await res.json();
+    const w = window.open('', '_blank');
+    w.document.write(data.html);
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 800);
+  } catch(err) { mostrarError('PDF: ' + err.message); }
+  finally { btn.disabled = false; btn.textContent = '⬇ PDF'; }
+}
+
+</script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -138,6 +176,13 @@ body::before {
 }
 @keyframes sweep { to { left: 100% } }
 
+.btn-export {
+  flex:1; background:var(--panel2); border:1px solid var(--border2); color:var(--accent);
+  border-radius:5px; padding:9px 6px; font-family:var(--display); font-size:13px; font-weight:600;
+  cursor:pointer; transition:all 0.2s; letter-spacing:0.04em;
+}
+.btn-export:hover { background:var(--accent); color:#000; border-color:var(--accent); }
+.btn-export:disabled { opacity:0.4; cursor:not-allowed; }
 .err { display: none; background: rgba(239,71,111,0.08); border: 1px solid rgba(239,71,111,0.25); border-radius: 5px; padding: 10px 12px; font-family: var(--mono); font-size: 11px; color: var(--red); line-height: 1.5; }
 
 /* KPIs */
@@ -319,33 +364,6 @@ body::before {
       </div>
     </div>
 
-    <!-- Correo -->
-    <div class="s-block">
-      <div class="s-hdr">Envío de Correo (opcional)</div>
-      <div class="s-body">
-        <div>
-          <div class="f-label">Tu correo (remitente)</div>
-          <input type="email" class="f-input" id="emailUser" placeholder="tu@correo.com">
-        </div>
-        <div>
-          <div class="f-label">Contraseña / App Password</div>
-          <input type="password" class="f-input" id="emailPass" placeholder="contraseña">
-        </div>
-        <div>
-          <div class="f-label">Servidor SMTP</div>
-          <input type="text" class="f-input" id="emailHost" placeholder="smtp.gmail.com">
-        </div>
-        <div>
-          <div class="f-label">Puerto</div>
-          <input type="text" class="f-input" id="emailPort" placeholder="587" value="587">
-        </div>
-        <div>
-          <div class="f-label">Enviar reporte a</div>
-          <input type="email" class="f-input" id="emailDest" placeholder="gerente@empresa.mx">
-        </div>
-      </div>
-    </div>
-
     <!-- Personalización -->
     <div class="s-block">
       <div class="s-hdr">Personalizar Reporte</div>
@@ -373,7 +391,7 @@ body::before {
           <div class="checks">
             <label class="check-row"><input type="checkbox" id="chkComparar" checked><label for="chkComparar">Comparar vs semana anterior</label></label>
             <label class="check-row"><input type="checkbox" id="chkOrdenes" checked><label for="chkOrdenes">Generar órdenes de compra</label></label>
-            <label class="check-row"><input type="checkbox" id="chkCorreo"><label for="chkCorreo">Enviar por correo al terminar</label></label>
+            
           </div>
         </div>
         <div>
@@ -382,6 +400,10 @@ body::before {
         </div>
         <button class="btn-run" id="btnRun" onclick="ejecutarAgente()">▶ EJECUTAR AGENTE</button>
         <div class="err" id="errBox"></div>
+        <div id="exportBtns" style="display:none;gap:8px;margin-top:4px">
+          <button class="btn-export" id="btnExcel" onclick="exportarExcel()">⬇ Excel</button>
+          <button class="btn-export" id="btnPdf" onclick="exportarPDF()">⬇ PDF</button>
+        </div>
       </div>
     </div>
 
@@ -510,7 +532,7 @@ body::before {
         <div class="f-item">iteraciones: <span id="footerIter">—</span></div>
         <div class="f-item">tokens: <span id="footerTokens">—</span></div>
         <div class="f-item">órdenes generadas: <span id="footerOrdenes">—</span></div>
-        <div class="f-item">correo: <span id="footerCorreo">—</span></div>
+        
       </div>
     </div>
 
@@ -526,7 +548,7 @@ const TOOL_NAMES = {
   obtener_inventario:       '📦 Leyendo inventario de materias primas...',
   generar_orden_compra:     '📋 Generando orden de compra...',
   comparar_semanas:         '📈 Comparando vs semana anterior...',
-  enviar_reporte_correo:    '✉️ Enviando reporte por correo...'
+
 };
 
 function addLog(tipo, texto, detalle) {
@@ -556,8 +578,6 @@ function construirInstrucciones() {
   const dirigido = document.getElementById('dirigidoA').value;
   const comparar = document.getElementById('chkComparar').checked;
   const ordenes = document.getElementById('chkOrdenes').checked;
-  const correo = document.getElementById('chkCorreo').checked;
-  const emailDest = document.getElementById('emailDest').value;
   const extra = document.getElementById('instrExtra').value;
 
   const tipoMap = { completo: 'análisis completo de producción e inventarios', produccion: 'análisis enfocado solo en producción', inventario: 'análisis enfocado solo en inventarios', ejecutivo: 'resumen ejecutivo breve (máximo 5 puntos)' };
@@ -566,7 +586,6 @@ function construirInstrucciones() {
   let inst = `Genera un ${tipoMap[tipo]} dirigido al ${dirMap[dirigido]}.`;
   if (comparar) inst += ` Incluye comparativo detallado vs semana anterior con variaciones porcentuales.`;
   if (ordenes) inst += ` Revisa inventarios y genera órdenes de compra para TODOS los materiales bajo mínimo, calculando cantidad para 4 semanas de producción.`;
-  if (correo && emailDest) inst += ` Al finalizar, envía el reporte completo por correo a ${emailDest} con asunto "Reporte Semanal de Producción — Semana 3-9 Mar 2025".`;
   if (extra) inst += ` Instrucciones adicionales: ${extra}`;
   return inst;
 }
@@ -600,10 +619,6 @@ async function ejecutarAgente() {
 
   const config = {
     empresa,
-    emailUser: document.getElementById('emailUser').value,
-    emailPass: document.getElementById('emailPass').value,
-    emailHost: document.getElementById('emailHost').value || 'smtp.gmail.com',
-    emailPort: document.getElementById('emailPort').value || '587'
   };
 
   try {
@@ -634,8 +649,7 @@ async function ejecutarAgente() {
       } else if (paso.herramienta === 'comparar_semanas') {
         const c = paso.resultado;
         detalle = `Producción: ${c.produccion?.variacion_pct}% | Rechazos: ${c.rechazos?.variacion_pct}% | Paros: ${c.paros?.variacion_pct}%`;
-      } else if (paso.herramienta === 'enviar_reporte_correo') {
-        detalle = paso.resultado.enviado ? `✓ Enviado a ${paso.resultado.destinatario}` : `⚠️ ${paso.resultado.error}`;
+` : `⚠️ ${paso.resultado.error}`;
       }
 
       addLog(paso.herramienta === 'generar_orden_compra' ? 'order' : 'result', label, detalle);
@@ -669,16 +683,17 @@ async function ejecutarAgente() {
     document.getElementById('mdBody').innerHTML = marked.parse(data.reporte || '');
 
     // Footer
-    const correoEnviado = data.pasos.find(p => p.herramienta === 'enviar_reporte_correo');
     document.getElementById('agentFooter').classList.add('visible');
     document.getElementById('footerIter').textContent = data.iteraciones;
     document.getElementById('footerTokens').textContent = data.tokens;
     document.getElementById('footerOrdenes').textContent = data.ordenes?.length || 0;
-    document.getElementById('footerCorreo').textContent = correoEnviado?.resultado?.enviado ? `Enviado a ${correoEnviado.resultado.destinatario}` : 'No enviado';
     document.getElementById('metaIter').textContent = `iteraciones: ${data.iteraciones}`;
     document.getElementById('metaTokens').textContent = `tokens: ${data.tokens}`;
 
     setStatus('done', 'ANÁLISIS COMPLETO');
+    window._lastResult = data;
+    window._lastEmpresa = empresa;
+    document.getElementById('exportBtns').style.display = 'flex';
 
   } catch (err) {
     document.getElementById('loadingSt').style.display = 'none';
@@ -697,6 +712,44 @@ function mostrarError(msg) {
   box.style.display = 'block';
   box.textContent = '⚠️ ' + msg;
 }
+
+async function exportarExcel() {
+  const btn = document.getElementById('btnExcel');
+  if (!window._lastResult) return;
+  btn.disabled = true; btn.textContent = '⏳ Generando...';
+  try {
+    const res = await fetch('/api/exportar-excel', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ reporte: window._lastResult.reporte, ordenes: window._lastResult.ordenes, empresa: window._lastEmpresa })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'Reporte_Produccion_NubeConnect.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  } catch(err) { mostrarError('Excel: ' + err.message); }
+  finally { btn.disabled = false; btn.textContent = '⬇ Excel'; }
+}
+
+async function exportarPDF() {
+  const btn = document.getElementById('btnPdf');
+  if (!window._lastResult) return;
+  btn.disabled = true; btn.textContent = '⏳ Preparando...';
+  try {
+    const res = await fetch('/api/exportar-pdf', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ reporte: window._lastResult.reporte, ordenes: window._lastResult.ordenes, empresa: window._lastEmpresa })
+    });
+    const data = await res.json();
+    const w = window.open('', '_blank');
+    w.document.write(data.html);
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 800);
+  } catch(err) { mostrarError('PDF: ' + err.message); }
+  finally { btn.disabled = false; btn.textContent = '⬇ PDF'; }
+}
+
 </script>
 </body>
 </html>
