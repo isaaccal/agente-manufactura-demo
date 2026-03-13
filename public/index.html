@@ -477,7 +477,7 @@ body::before {
           <div class="t-prog">de 900 programadas</div>
           <div class="t-row"><span class="t-row-lbl">Rechazos</span><span class="t-row-val red">44 pzas</span></div>
           <div class="t-row"><span class="t-row-lbl">Paro</span><span class="t-row-val red">142 min</span></div>
-          <div class="t-causa alert">⚠️ Corte de energía no programado</div>
+          <div class="t-causa alert">Error: Corte de energía no programado</div>
         </div>
       </div>
     </div>
@@ -640,16 +640,16 @@ async function ejecutarAgente() {
       let detalle = '';
 
       if (paso.herramienta === 'obtener_datos_produccion') {
-        detalle = `Semana: ${paso.args.semana} → ${Array.isArray(paso.resultado.datos) ? paso.resultado.datos.length + ' turnos recuperados' : 'datos comparativos obtenidos'}`;
+        detalle = `Semana: ${paso.args.semana} -> ${Array.isArray(paso.resultado.datos) ? paso.resultado.datos.length + ' turnos recuperados' : 'datos comparativos obtenidos'}`;
       } else if (paso.herramienta === 'obtener_inventario') {
         const alertas = paso.resultado.alertas || [];
-        detalle = `${paso.resultado.inventario?.length || 0} materiales revisados${alertas.length ? ` → ⚠️ ALERTA: ${alertas.join(', ')}` : ' → todos OK'}`;
+        detalle = `${paso.resultado.inventario?.length || 0} materiales revisados${alertas.length ? ` -> ALERTA: ${alertas.join(', ')}` : ' -> todos OK'}`;
       } else if (paso.herramienta === 'generar_orden_compra') {
         detalle = `${paso.resultado.material} — ${paso.resultado.cantidad} ${paso.resultado.unidad || ''} — Folio: ${paso.resultado.folio} — Total: $${paso.resultado.total_mxn} MXN`;
       } else if (paso.herramienta === 'comparar_semanas') {
         const c = paso.resultado;
         detalle = `Producción: ${c.produccion?.variacion_pct}% | Rechazos: ${c.rechazos?.variacion_pct}% | Paros: ${c.paros?.variacion_pct}%`;
-` : `⚠️ ${paso.resultado.error}`;
+
       }
 
       addLog(paso.herramienta === 'generar_orden_compra' ? 'order' : 'result', label, detalle);
@@ -710,7 +710,7 @@ async function ejecutarAgente() {
 function mostrarError(msg) {
   const box = document.getElementById('errBox');
   box.style.display = 'block';
-  box.textContent = '⚠️ ' + msg;
+  box.textContent = 'Error: ' + msg;
 }
 
 async function exportarExcel() {
